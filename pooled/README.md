@@ -2,6 +2,10 @@
 
 Everything that turns CRSP output into what the two papers train on.
 
+In this repo, `build_pooled_dataset.py` (or `python main.py pooled`) runs all of
+the steps below in order on `output/mid_highmid_20yr_portfolios/` and writes to
+`output/pooled/`. The scripts can still be run one at a time as described here.
+
 The papers share one cleaning step and then diverge: they pool the same 50
 names into two different shapes, so there is no single "pooled dataset
 builder" -- there are two, with one cleaner ahead of both.

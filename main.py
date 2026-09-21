@@ -3,8 +3,8 @@ import os
 
 import pandas as pd
 
-import build_pooled_dataset
 from dataloader.dataloader import DataLoader
+from pooled import build_pooled_dataset
 
 
 def read_words_from_file(file_path):

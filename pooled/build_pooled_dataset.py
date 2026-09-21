@@ -2,7 +2,7 @@
 Build the pooled datasets from output/mid_highmid_20yr_portfolios (the 9-column
 export written by build_portfolio_sets.py).
 
-The scripts under pooled/ do the actual work and are run unmodified, one
+The other scripts in this folder do the actual work and are run unmodified, one
 subprocess each; this file only chains them and fixes the paths. See
 pooled/README.md for what each step does and why.
 
@@ -17,8 +17,9 @@ Steps:
   3. Run the per-paper builders for every requested set.
 
 Usage:
-    python build_pooled_dataset.py                       # both papers, all 4 sets
-    python build_pooled_dataset.py --target onenas --sets set1
+    python pooled/build_pooled_dataset.py                       # both papers, all 4 sets
+    python pooled/build_pooled_dataset.py --target onenas --sets set1
+    python main.py pooled ...                                   # same thing
 """
 
 import argparse
@@ -27,8 +28,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent
-POOLED = REPO / "pooled"
+POOLED = Path(__file__).resolve().parent
+REPO = POOLED.parent
 
 IN_DIR = "output/mid_highmid_20yr_portfolios"
 OUT_DIR = "output/pooled"
