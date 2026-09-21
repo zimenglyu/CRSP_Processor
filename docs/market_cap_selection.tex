@@ -1,0 +1,156 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{hyperref}
+\geometry{margin=1in}
+
+\title{Sample Construction: Mid- and High-Mid-Capitalization Equities\\
+with Extended Trading Histories}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Data Source}
+
+The universe of candidate securities is drawn from the constituents of the
+S\&P 500 index, sourced from the Center for Research in Security Prices
+(CRSP) daily stock file. Each security is identified by its CRSP permanent
+identifier (\textsc{permno}), which is invariant to ticker or company-name
+changes over time. Raw records are restricted to trading dates on or after
+January 1, 2000, yielding a panel of $N = 494$ distinct securities.
+
+\section{Longevity Filter}
+
+For each security $i$, let $t_i^{\text{start}}$ and $t_i^{\text{end}}$
+denote the first and last observed trading dates in the panel. We define
+the observed history length, in years, as
+\begin{equation}
+  H_i \;=\; \frac{t_i^{\text{end}} - t_i^{\text{start}}}{365.25}.
+\end{equation}
+A security is retained under the \emph{longevity filter} if
+\begin{equation}
+  H_i \;\geq\; H_{\min}, \qquad H_{\min} = 20 \text{ years}.
+\end{equation}
+Applying this filter to the full panel yields $n_{20} = 372$ securities
+with at least two decades of continuous trading history.
+
+\section{Market Capitalization Classification}
+
+Let $M_i$ denote the current market capitalization of security $i$, in
+billions of USD, obtained from the most recent cross-sectional snapshot of
+S\&P 500 constituents. We partition the capitalization axis into four
+tiers, following standard practitioner conventions:
+\begin{equation}
+  \text{Tier}(M_i) =
+  \begin{cases}
+    \text{Small}     & M_i < 2 \\
+    \text{Mid}        & 2 \leq M_i < 10 \\
+    \text{High-Mid} \; / \; \text{Low-Large} & 10 \leq M_i < 50 \\
+    \text{Large}      & 50 \leq M_i < 200 \\
+    \text{Mega}       & M_i \geq 200
+  \end{cases}
+  \qquad (\text{USD, billions}).
+\end{equation}
+
+Within the longevity-filtered set ($n_{20}=372$), the tier distribution is
+reported in Table~\ref{tab:tiers}.
+
+\begin{table}[h]
+\centering
+\caption{Market-capitalization tiers among securities with $H_i \geq 20$ years.}
+\label{tab:tiers}
+\begin{tabular}{lrr}
+\toprule
+Tier & Range (USD B) & Count \\
+\midrule
+Small            & $[0, 2)$    & 0 \\
+Mid              & $[2, 10)$   & 14 \\
+High-Mid / Low-Large & $[10, 50)$ & 189 \\
+Large            & $[50, 200)$ & 130 \\
+Mega             & $[200, \infty)$ & 39 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The near-total absence of small- and true-mid-cap names in this filtered
+set reflects survivorship: firms retaining index membership and continuous
+listing for two decades or more have, on average, grown substantially in
+capitalization.
+
+\section{Target Universe}
+
+The target universe $\mathcal{U}$ combines the \emph{Mid} and
+\emph{High-Mid / Low-Large} tiers, i.e.\ all securities satisfying both the
+longevity filter and a capitalization band of \$2B--\$50B:
+\begin{equation}
+  \mathcal{U} \;=\; \left\{\, i \;:\; H_i \geq 20 \ \text{and} \ 2 \leq M_i < 50 \,\right\}.
+\end{equation}
+This yields $|\mathcal{U}| = 203$ securities.
+
+\section{Random Partitioning}
+
+To construct $K = 4$ disjoint portfolio sets of equal size $s = 50$, the
+following procedure is applied:
+
+\begin{enumerate}
+  \item The tickers in $\mathcal{U}$ are randomly permuted using a
+        pseudo-random generator with fixed seed ($\text{seed} = 42$), for
+        reproducibility.
+  \item The first $K \cdot s = 200$ tickers of the permuted sequence are
+        retained; the remaining $|\mathcal{U}| - K s = 3$ tickers are
+        discarded (AIG, CCI, SBAC).
+  \item The retained sequence is partitioned into $K$ contiguous,
+        non-overlapping blocks of size $s$:
+        \begin{equation}
+          \mathcal{U}_k = \{\, u_{(k-1)s+1}, \dots, u_{ks} \,\}, \qquad k = 1,\dots,K,
+        \end{equation}
+        where $u_1,\dots,u_{200}$ denotes the shuffled ticker sequence.
+        By construction, $\mathcal{U}_j \cap \mathcal{U}_k = \emptyset$ for
+        $j \neq k$, and $\bigcup_k \mathcal{U}_k$ has no repeated tickers.
+\end{enumerate}
+
+It is important to note that randomization is applied only to the
+\emph{cross-sectional assignment} of securities to sets. The
+\emph{time-series ordering} of each security's own observations is left
+untouched: within every output file, rows remain sorted chronologically by
+trading date, preserving the temporal dependence structure required for
+downstream time-series modeling.
+
+\section{Feature Construction}
+
+For each retained security $i$ and trading day $t$, six predictors are
+computed from the raw CRSP fields (price \textsc{prc}, volume
+\textsc{vol}, shares outstanding \textsc{shrout}, ask/bid quotes
+\textsc{ask}, \textsc{bid}, return \textsc{ret}, and value-weighted market
+return \textsc{sprtrn}):
+
+\begin{align}
+  \text{RET}_{i,t}          &= \text{(CRSP holding-period return)} \\
+  \text{VOL\_CHANGE}_{i,t}  &= \frac{\text{VOL}_{i,t} - \text{VOL}_{i,t-1}}{\text{VOL}_{i,t-1}} \\
+  \text{BA\_SPREAD}_{i,t}   &= \frac{\text{ASK}_{i,t} - \text{BID}_{i,t}}{\lvert\text{PRC}_{i,t}\rvert} \\
+  \text{ILLIQUIDITY}_{i,t}  &= \frac{\text{RET}_{i,t}}{\text{VOL}_{i,t}\cdot\lvert\text{PRC}_{i,t}\rvert} \\
+  \text{sprtrn}_{i,t}       &= \text{(CRSP value-weighted market return)} \\
+  \text{TURNOVER}_{i,t}     &= \frac{\text{VOL}_{i,t}}{\text{SHROUT}_{i,t}}
+\end{align}
+
+Records with a return code of \texttt{'B'} or \texttt{'C'} (CRSP's markers
+for missing or non-standard pricing) are dropped prior to feature
+computation, and any resulting infinite values (e.g.\ division by zero
+volume) are set to missing.
+
+\section{Output}
+
+The final artifact consists of $K=4$ directories
+$\{\texttt{set1},\dots,\texttt{set4}\}$, each containing $s=50$ CSV files
+(one per security). Each file contains the columns
+$\{\texttt{date}, \text{RET}, \text{VOL\_CHANGE}, \text{BA\_SPREAD},
+\text{ILLIQUIDITY}, \text{sprtrn}, \text{TURNOVER}\}$, sorted
+chronologically, spanning that security's full available history from
+2000 onward.
+
+\end{document}
