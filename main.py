@@ -1,7 +1,10 @@
+import argparse
 import os
 
 import pandas as pd
+
 from dataloader.dataloader import DataLoader
+from pooled import build_pooled_dataset
 
 
 def read_words_from_file(file_path):
@@ -507,7 +510,7 @@ def run_old_pipeline():
     print("finished saving data")
 
 
-if __name__ == "__main__":
+def run_split_by_permco():
     data_path = "datasets/sp-500-24.csv"
     output_dir = os.path.join("datasets", "sp500_by_permco")
 
@@ -516,5 +519,22 @@ if __name__ == "__main__":
         output_dir=output_dir,
         chunksize=100000,
     )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="CRSP processor")
+    commands = parser.add_subparsers(dest="command")
+    commands.add_parser("split", help="split the raw CRSP file by PERMCO (default)")
+    pooled_parser = commands.add_parser(
+        "pooled",
+        help="build the pooled datasets from output/mid_highmid_20yr_portfolios",
+    )
+    build_pooled_dataset.add_arguments(pooled_parser)
+    args = parser.parse_args()
+
+    if args.command == "pooled":
+        build_pooled_dataset.run_from_args(args)
+    else:
+        run_split_by_permco()
 
 
