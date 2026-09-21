@@ -1,10 +1,9 @@
 # CRSP_Processor
 
-This repo processes daily stock data from the [CRSP](https://www.crsp.org/)
+This repository processes daily stock data from the
+[CRSP](https://wrds-www.wharton.upenn.edu/pages/about/data-vendors/center-for-research-in-security-prices-crsp/)
 database (S&P 500 companies) into clean per-company files, portfolio sets, and
 the pooled datasets used for training.
-
-CRSP data is licensed, so no data is included. You need your own CRSP export.
 
 ## Setup
 
@@ -12,21 +11,22 @@ CRSP data is licensed, so no data is included. You need your own CRSP export.
 pip install pandas numpy
 ```
 
-Put your raw CRSP daily export at `datasets/2025-CRSP.csv`. It is one big CSV
-with every company stacked row by row. Run every command from the repo root.
+Place the raw CRSP daily export at `datasets/2025-CRSP.csv`. The file is a
+single CSV with all companies stacked row by row. All commands are run from
+the repository root.
 
 ## Layout
 
-| Folder | What is in it |
+| Folder | Contents |
 |---|---|
-| `scripts/` | The processing steps, run one at a time in the order below |
-| `pooled/` | Builds the pooled datasets (details in `pooled/README.md`) |
+| `scripts/` | Processing steps, run one at a time in the order below |
+| `pooled/` | Pooled dataset construction (details in `pooled/README.md`) |
 | `dataloader/` | Classes used by the older pipeline in `main.py` |
 | `tools/` | Small helpers (plots, ticker ranking) |
-| `tickers/` | Ticker lists and S&P 500 company info |
-| `datasets/`, `output/` | Your data and the results (not in git) |
+| `tickers/` | Ticker lists and S&P 500 company information |
+| `datasets/`, `output/` | Input data and results (not tracked in git) |
 
-## How to run
+## Usage
 
 **1. Per-company files**
 
@@ -37,7 +37,7 @@ python scripts/dedup_sp500.py        # merge duplicate-date rows
 python scripts/validate_sp500.py     # check for gaps and duplicates
 ```
 
-Result: `output/sp500_individual/<TICKER>.csv`
+Output: `output/sp500_individual/<TICKER>.csv`
 
 **2. Portfolio sets**
 
@@ -45,36 +45,37 @@ Result: `output/sp500_individual/<TICKER>.csv`
 python scripts/build_portfolio_sets.py
 ```
 
-Picks mid and high-mid cap stocks with 20+ years of history, adds the
-predictors, and writes 4 sets of 50 stocks to
+Selects mid and high-mid cap stocks with at least 20 years of history, adds
+the predictors, and writes 4 sets of 50 stocks to
 `output/mid_highmid_20yr_portfolios/set1..set4/`.
 
 **3. Pooled datasets**
 
 ```
 python main.py pooled                              # both papers, all 4 sets
-python main.py pooled --target onenas --sets set1  # just one
+python main.py pooled --target onenas --sets set1  # a single target and set
 ```
 
 Cleans the portfolio sets and builds the pooled data in `output/pooled/`:
 `examm/` (one wide 300-input panel per set) and `onenas/` (50 per-stock files
-plus a shared calendar per set). Run `python main.py pooled --help` for the
-options.
+plus a shared calendar per set). All options are listed by
+`python main.py pooled --help`.
 
-**Optional: the 10-stock dataset**
+**Optional: 10-stock dataset**
 
 ```
 python scripts/process_new_selected.py
 python scripts/split_select10.py
 ```
 
-Writes a 70/15/15 train/val/test split to `output/2023_select_10_701515_raw/`.
+Writes a 70/15/15 train/validation/test split to
+`output/2023_select_10_701515_raw/`.
 
 ## Predictors
 
 | Column | Formula |
 |---|---|
-| `VOL_CHANGE` | daily % change of `VOL` |
+| `VOL_CHANGE` | daily percentage change of `VOL` |
 | `BA_SPREAD` | `(ASK - BID) / PRC` |
 | `ILLIQUIDITY` | `RET / (VOL * PRC)` |
 | `TURNOVER` | `VOL / SHROUT` |
@@ -82,5 +83,6 @@ Writes a 70/15/15 train/val/test split to `output/2023_select_10_701515_raw/`.
 
 ## Note on tickers
 
-Companies are matched by `PERMNO`, not `TICKER`. Tickers change (FB became
-META) and get reused by unrelated companies; `PERMNO` never changes.
+Companies are matched by `PERMNO` rather than `TICKER`. Tickers change over
+time (FB became META) and are reused by unrelated companies, whereas `PERMNO`
+is permanent.
